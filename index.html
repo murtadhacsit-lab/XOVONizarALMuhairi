@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نزار الحميري — نظام إدارة الزبائن</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --primary:#0a3d62;
+  --primary-2:#1e6091;
+  --primary-3:#2d8bc9;
+  --accent:#f4a261;
+  --accent-2:#e76f51;
+  --gold:#d4a017;
+  --bg:#eef2f7;
+  --bg-2:#e3eaf3;
+  --card:#ffffff;
+  --text:#16222e;
+  --text-2:#4a5b6b;
+  --muted:#8494a4;
+  --border:#dbe3ec;
+  --danger:#c0392b;
+  --danger-2:#e74c3c;
+  --success:#16a085;
+  --warning:#f39c12;
+  --shadow:0 10px 30px rgba(10,61,98,.10);
+  --shadow-lg:0 25px 60px rgba(10,61,98,.18);
+  --radius:16px;
+  --transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Cairo',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg-2);border-radius:10px}
+::-webkit-scrollbar-thumb{background:var(--primary);border-radius:10px}
+
+/* شاشة الدخول */
+#loginScreen{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#0a3d62 0%,#1e6091 50%,#2d8bc9 100%);
+  z-index:5000;
+  padding:20px;
+  overflow-y:auto;
+}
+.login-box{
+  background:rgba(255,255,255,.98);
+  padding:50px 45px;
+  border-radius:24px;
+  box-shadow:0 30px 80px rgba(0,0,0,.4);
+  width:100%;max-width:440px;
+  text-align:center;
+}
+.login-logo{
+  width:140px;height:140px;
+  margin:0 auto 20px;
+  border-radius:50%;
+  background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 15px 40px rgba(10,61,98,.3);
+  overflow:hidden;
+  border:4px solid #fff;
+}
+.login-logo img{width:100%;height:100%;object-fit:contain;padding:8px}
+.login-logo span{color:#0a3d62;font-size:60px}
+.login-box h1{color:var(--primary);font-size:30px;font-weight:900;margin-bottom:6px}
+.login-box .subtitle{color:var(--muted);font-size:14px;margin-bottom:30px}
+.input-wrap{position:relative;margin-bottom:18px}
+.input-wrap .field-icon{
+  position:absolute;
+  right:16px;top:50%;
+  transform:translateY(-50%);
+  color:var(--muted);
+  font-size:18px;
+}
+.input-wrap input{
+  width:100%;
+  padding:16px 48px 16px 52px;
+  border:2px solid var(--border);
+  border-radius:12px;
+  font-size:17px;
+  font-family:inherit;
+  text-align:center;
+  letter-spacing:3px;
+  font-weight:700;
+  color:var(--primary);
+  background:#f8fafc;
+  transition:var(--transition);
+}
+.input-wrap input:focus{
+  outline:none;
+  border-color:var(--primary-3);
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(45,139,201,.15);
+}
+.toggle-password{
+  position:absolute;
+  left:10px;top:50%;
+  transform:translateY(-50%);
+  width:38px;height:38px;
+  border-radius:10px;
+  border:1.5px solid var(--border);
+  background:#fff;
+  color:var(--muted);
+  cursor:pointer;
+  font-size:16px;
+  padding:0;
+  transition:all .25s ease;
+}
+.toggle-password:hover{background:var(--primary-3);color:#fff;border-color:var(--primary-3)}
+.toggle-password.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-login{
+  width:100%;
+  padding:16px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-3));
+  color:#fff;
+  border:none;
+  border-radius:12px;
+  font-size:17px;
+  font-weight:800;
+  font-family:inherit;
+  cursor:pointer;
+  transition:var(--transition);
+  box-shadow:0 8px 25px rgba(10,61,98,.35);
+}
+.btn-login:hover{transform:translateY(-2px)}
+.error-msg{color:var(--danger);font-size:13.5px;margin-top:14px;min-height:20px;font-weight:600}
+.shake{animation:shake .5s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#debugBox{display:none;margin-top:14px;padding:12px;background:#fff3cd;border:2px dashed #f39c12;border-radius:10px;text-align:right;font-size:12px;color:#7d5b00;direction:ltr;font-family:monospace;line-height:1.6}
+
+/* الهيدر */
+header{
+  background:#fff;
+  padding:14px 30px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  box-shadow:0 4px 25px rgba(10,61,98,.08);
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid var(--border);
+}
+.header-logo{
+  width:70px;height:70px;
+  border-radius:14px;
+  background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(10,61,98,.12);
+  overflow:hidden;
+  border:1px solid var(--border);
+  flex-shrink:0;
+}
+.header-logo img{width:100%;height:100%;object-fit:contain;padding:4px}
+.header-logo span{color:var(--primary);font-size:34px}
+.brand h2{color:var(--primary);font-size:22px;font-weight:900}
+.brand span{color:var(--muted);font-size:12.5px}
+.header-phones{margin-inline-start:auto;display:flex;gap:10px}
+.phone-chip{
+  display:flex;align-items:center;gap:8px;
+  background:#eef6fc;padding:8px 14px;border-radius:30px;
+  font-size:13.5px;font-weight:700;color:var(--primary);
+  border:1px solid #cfe0ee;
+}
+
+/* الحاويات */
+.container{max-width:1280px;margin:30px auto;padding:0 22px}
+.card{
+  background:#fff;
+  border-radius:var(--radius);
+  padding:26px;
+  box-shadow:var(--shadow);
+  margin-bottom:22px;
+  border:1px solid rgba(219,227,236,.6);
+}
+.card-header{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:20px;padding-bottom:16px;
+  border-bottom:2px dashed var(--border);
+}
+.card-header .ico{
+  width:42px;height:42px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-3));
+  color:#fff;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+}
+.card-header h3{color:var(--primary);font-size:19px;font-weight:800}
+
+/* الأزرار */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 22px;border:none;border-radius:11px;
+  font-family:inherit;font-size:14.5px;font-weight:700;
+  cursor:pointer;transition:var(--transition);white-space:nowrap;
+}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-3));color:#fff;box-shadow:0 6px 18px rgba(10,61,98,.25)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 6px 18px rgba(231,111,81,.30)}
+.btn-accent:hover{transform:translateY(-2px)}
+.btn-danger{background:linear-gradient(135deg,var(--danger-2),var(--danger));color:#fff}
+.btn-danger:hover{transform:translateY(-2px)}
+.btn-ghost{background:#f0f4f9;color:var(--text-2);border:1px solid var(--border)}
+.btn-ghost:hover{background:#e5ecf3;color:var(--primary)}
+.btn-sm{padding:8px 12px;font-size:12.5px;border-radius:9px}
+.btn-icon{padding:9px 11px;min-width:36px}
+
+/* شريط الأدوات */
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.search-wrap{position:relative;flex:1;min-width:240px}
+.search-wrap .ico{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px}
+.search-wrap input{
+  width:100%;padding:13px 46px 13px 18px;
+  border:2px solid var(--border);border-radius:12px;
+  font-size:14.5px;font-family:inherit;background:#f8fafc;font-weight:500;
+}
+.search-wrap input:focus{outline:none;border-color:var(--primary-3);background:#fff;box-shadow:0 0 0 4px rgba(45,139,201,.12)}
+.date-filter{position:relative;min-width:150px}
+.date-filter input{
+  width:100%;padding:13px 14px;
+  border:2px solid var(--border);border-radius:12px;
+  font-size:14px;font-family:inherit;background:#f8fafc;font-weight:600;
+  color:var(--primary);direction:ltr;text-align:left;
+}
+.date-filter input:focus{outline:none;border-color:var(--primary-3);background:#fff}
+
+/* الجداول */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+thead{background:#eef3f9}
+th{padding:15px 14px;text-align:right;color:var(--primary);font-weight:800;font-size:13.5px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:14px;border-bottom:1px solid #eef3f9;color:var(--text);font-weight:500}
+tbody tr:hover{background:#f8fafd}
+.actions-cell{display:flex;gap:6px}
+.name-link{color:var(--primary);font-weight:800;cursor:pointer;padding:4px 0;display:inline-flex;align-items:center;gap:8px}
+.name-link:hover{color:var(--accent-2)}
+.empty-row{text-align:center;padding:40px 20px;color:var(--muted);font-size:15px}
+.badge{display:inline-flex;align-items:center;padding:5px 12px;border-radius:20px;font-size:12.5px;font-weight:700}
+.badge-success{background:#e6f7ec;color:#1e8449}
+.badge-danger{background:#fdecea;color:#c0392b}
+.badge-neutral{background:#eef2f7;color:var(--text-2)}
+
+/* شريط الزبون */
+.customer-bar{
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-2) 50%,var(--primary-3) 100%);
+  color:#fff;border-radius:var(--radius);padding:28px 30px;margin-bottom:22px;
+  display:flex;flex-wrap:wrap;gap:24px;align-items:center;
+  box-shadow:0 15px 40px rgba(10,61,98,.3);
+}
+.customer-info{flex:1;min-width:220px}
+.customer-info h2{font-size:26px;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.customer-info h2 .ico{background:rgba(255,255,255,.2);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.customer-info .meta{display:flex;flex-wrap:wrap;gap:18px;font-size:14.5px;opacity:.95}
+.customer-info .meta span{display:flex;align-items:center;gap:8px}
+
+/* النوافذ */
+.modal{display:none;position:fixed;inset:0;background:rgba(10,30,50,.65);z-index:3000;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-content{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-header{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:18px;border-bottom:2px dashed var(--border)}
+.modal-header .ico{width:44px;height:44px;background:linear-gradient(135deg,var(--primary),var(--primary-3));color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.modal-header h3{color:var(--primary);font-size:20px;font-weight:800}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;margin-bottom:8px;font-weight:700;font-size:13.5px;color:var(--text-2)}
+.form-group input,.form-group textarea{width:100%;padding:13px 16px;border:2px solid var(--border);border-radius:11px;font-size:15px;font-family:inherit;background:#f8fafc;font-weight:500;color:var(--text)}
+.form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--primary-3);background:#fff}
+.form-group input[type="number"],.form-group input[type="date"]{direction:ltr;text-align:left}
+.form-group textarea{min-height:70px;resize:vertical}
+.modal-actions{display:flex;gap:12px;margin-top:26px;padding-top:20px;border-top:1px solid var(--border)}
+.modal-actions .btn{flex:1}
+
+/* الوصل */
+.receipt-wrap{position:fixed;inset:0;background:rgba(10,30,50,.88);z-index:4000;overflow-y:auto;padding:80px 20px 30px;display:none}
+.receipt-wrap.active{display:block}
+.receipt-toolbar{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;z-index:4010;
+  background:#fff;padding:10px;border-radius:14px;
+  box-shadow:0 15px 40px rgba(0,0,0,.35);
+}
+.receipt{
+  background:#fff;
+  width:210mm;
+  min-height:297mm;
+  padding:12mm;
+  margin:0 auto;
+  position:relative;
+  box-shadow:0 25px 60px rgba(0,0,0,.5);
+  border-radius:6px;
+  color:#16222e;
+  font-family:'Cairo',Arial,sans-serif;
+  overflow:hidden;
+}
+
+/* ★ Watermark — طبقة خلفية شفافة */
+.receipt-watermark{
+  position:absolute;
+  inset:0;
+  background-image:url("image1.png");
+  background-repeat:no-repeat;
+  background-position:center center;
+  background-size:contain;
+  background-origin:content-box;
+  background-clip:content-box;
+  opacity:0.19;
+  z-index:0;
+  pointer-events:none;
+}
+.receipt > *:not(.receipt-watermark){position:relative;z-index:1}
+
+/* ★ صورة أعلى وسط الوصل */
+.receipt-top-logo{
+  text-align:center;
+  margin-bottom:16px;
+  padding:6px 0;
+}
+.receipt-top-logo img{
+  display:inline-block;
+  max-width:240px;
+  max-height:120px;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+}
+
+.receipt-header{
+  display:flex;align-items:center;gap:20px;
+  border-bottom:3px double #0a3d62;
+  padding-bottom:16px;margin-bottom:20px;
+}
+.receipt-header .logo-box{width:100px;height:100px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.receipt-header .logo-box img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block}
+.receipt-header .logo-box span{color:#0a3d62;font-size:50px}
+.receipt-header .title h1{color:#0a3d62;font-size:28px;font-weight:900;margin-bottom:4px}
+.receipt-header .title p{color:#8494a4;font-size:13px;font-weight:600}
+.receipt-header .phones{margin-inline-start:auto;text-align:left;font-size:13px;line-height:1.9}
+.receipt-header .phones strong{color:#0a3d62;font-size:14px;display:block}
+.receipt-header .phones .date-line{color:#8494a4;font-size:12px;margin-top:6px}
+
+.receipt-info{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  margin-bottom:18px;
+}
+.receipt-info div{
+  background:#f0f4f9;padding:10px 14px;border-radius:8px;
+  font-size:13px;border-right:4px solid #2d8bc9;
+}
+.receipt-info b{color:#0a3d62;font-weight:800}
+
+table.receipt-table{
+  font-size:12px;border-collapse:collapse;width:100%;
+}
+table.receipt-table th{
+  background:#0a3d62;color:#fff;
+  padding:10px 6px;text-align:center;
+  font-weight:700;border:1px solid #0a3d62;
+  font-size:12px;
+}
+table.receipt-table td{
+  padding:8px 6px;text-align:center;
+  border:1px solid #dbe4ee;color:#16222e;
+  font-size:12px;
+}
+table.receipt-table tbody tr:nth-child(even){background:#f8fafd}
+.total-row{background:#fff7e6 !important;font-weight:800 !important}
+.total-row td{
+  color:#0a3d62 !important;
+  font-size:13px !important;
+  border-top:2px solid #0a3d62 !important;
+}
+
+/* ★ صندوق الملخص أسفل الوصل */
+.receipt-summary{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  background:linear-gradient(135deg,#f0f7ff,#e8f3fb);
+  padding:14px 16px;
+  border-radius:10px;
+  border:2px dashed #0a3d62;
+}
+.receipt-summary .item{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:13.5px;padding:8px 12px;
+  background:#fff;border-radius:8px;
+  border-right:4px solid #2d8bc9;
+}
+.receipt-summary .item b{color:#0a3d62}
+.receipt-summary .item.full{grid-column:1 / -1}
+.receipt-summary .item.grand{
+  grid-column:1 / -1;
+  background:#fff7e6;
+  border-right-color:#e76f51;
+  font-size:15px;font-weight:900;
+}
+.receipt-summary .item.grand b{font-size:18px;color:#c0392b}
+.receipt-summary .item.last{
+  grid-column:1 / -1;
+  background:#e8f8f5;
+  border-right-color:#16a085;
+  font-size:15px;font-weight:900;
+}
+.receipt-summary .item.last b{font-size:18px;color:#16a085}
+.receipt-summary .item.positive b{color:#16a085}
+
+.receipt-footer{
+  margin-top:20px;padding-top:14px;
+  border-top:2px dashed #dbe3ec;
+  display:flex;flex-direction:column;gap:10px;
+  font-size:12.5px;color:#4a5b6b;
+}
+.receipt-footer .contact-line{
+  display:flex;flex-wrap:wrap;gap:14px;
+  justify-content:center;
+  padding:10px;
+  background:#f0f4f9;border-radius:8px;
+  font-size:12.5px;
+}
+.receipt-footer .contact-line span{
+  display:inline-flex;align-items:center;gap:6px;
+  color:#0a3d62;font-weight:700;
+}
+.receipt-footer .address-line{
+  text-align:center;
+  font-size:13px;
+  color:#0a3d62;
+  font-weight:800;
+  padding:8px;
+  background:#fff7e6;
+  border-radius:8px;
+  border:1px dashed #d4a017;
+}
+.receipt-footer .thanks{color:#8494a4;font-size:12px;font-weight:600;text-align:center}
+
+.receipt.font-sm table.receipt-table th,
+.receipt.font-sm table.receipt-table td{font-size:10px;padding:6px 4px}
+.receipt.font-sm .receipt-header .title h1{font-size:22px}
+.receipt.font-sm .receipt-info div{font-size:11px;padding:8px 12px}
+.receipt.font-sm .receipt-summary .item{font-size:11.5px}
+
+.receipt.font-xs table.receipt-table th,
+.receipt.font-xs table.receipt-table td{font-size:8.5px;padding:4px 3px}
+.receipt.font-xs .receipt-header .title h1{font-size:20px}
+.receipt.font-xs .receipt-info div{font-size:10px;padding:6px 10px}
+.receipt.font-xs .receipt-summary .item{font-size:10.5px}
+
+/* الطباعة */
+@media print{
+  body *{visibility:hidden !important}
+  .receipt-wrap,.receipt-wrap *{visibility:visible !important}
+  .receipt-wrap{position:absolute !important;inset:0 !important;background:#fff !important;padding:0 !important;display:block !important}
+  .receipt-toolbar{display:none !important}
+  .receipt{box-shadow:none !important;margin:0 !important;width:100% !important;padding:10mm !important;border-radius:0 !important;min-height:auto !important}
+  @page{size:A4;margin:0}
+  .receipt-watermark{opacity:0.12 !important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
+
+/* Toast */
+.toast-container{position:fixed;top:20px;left:20px;z-index:7000;display:flex;flex-direction:column;gap:10px}
+.toast{
+  background:#fff;padding:14px 20px;border-radius:12px;
+  box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:12px;
+  font-weight:700;font-size:14px;min-width:280px;
+  border-right:5px solid var(--primary);
+  animation:toastIn .35s;
+}
+.toast.success{border-right-color:var(--success)}
+.toast.error{border-right-color:var(--danger)}
+.toast.warning{border-right-color:var(--warning)}
+.toast .ico{font-size:18px}
+.toast.success .ico{color:var(--success)}
+.toast.error .ico{color:var(--danger)}
+.toast.warning .ico{color:var(--warning)}
+@keyframes toastIn{from{opacity:0;transform:translateX(-100%)}to{opacity:1;transform:translateX(0)}}
+.toast.hide{animation:toastOut .3s forwards}
+@keyframes toastOut{to{opacity:0;transform:translateX(-100%)}}
+
+@media (max-width:768px){
+  header{padding:12px 16px;gap:12px}
+  .header-logo{width:54px;height:54px}
+  .brand h2{font-size:17px}
+  .brand span{display:none}
+  .header-phones{flex-direction:column;gap:4px}
+  .phone-chip{padding:6px 10px;font-size:12px}
+  .container{padding:0 14px;margin:20px auto}
+  .card{padding:18px}
+  .customer-bar{padding:22px 20px}
+  .customer-info h2{font-size:20px}
+  .btn{padding:10px 16px;font-size:13.5px}
+  .modal-content{padding:24px}
+  .receipt{padding:8mm;width:100%}
+  th,td{padding:10px 8px;font-size:12.5px}
+  .login-box{padding:35px 25px}
+}
+</style>
+</head>
+<body>
+
+<!-- شاشة الدخول -->
+<div id="loginScreen">
+  <div class="login-box" id="loginBox">
+    <div class="login-logo">
+      <img src="logo.png" alt="شعار" onerror="this.style.display='none';this.parentElement.innerHTML='<span>🏪</span>'">
+    </div>
+    <h1>نزار الحميري</h1>
+    <p class="subtitle">نظام إدارة الزبائن والمبيعات</p>
+
+    <div class="input-wrap">
+      <input type="password" id="codeInput" placeholder="أدخل الرمز السري" autocomplete="off">
+      <span class="field-icon">🔒</span>
+      <button type="button" class="toggle-password" id="togglePassword">👁</button>
+    </div>
+
+    <button class="btn-login" id="loginBtn" type="button">دخول</button>
+
+    <div class="error-msg" id="loginError"></div>
+    <div id="debugBox"></div>
+  </div>
+</div>
+
+<!-- التطبيق -->
+<div id="app" style="display:none">
+
+  <header>
+    <div class="header-logo" id="headerLogo">
+      <img src="logo.png" alt="شعار" onerror="this.style.display='none';this.parentElement.innerHTML='<span>🏪</span>'">
+    </div>
+    <div class="brand">
+      <h2>نزار الحميري</h2>
+      <span>نظام إدارة الزبائن والمبيعات</span>
+    </div>
+    <div class="header-phones">
+      <div class="phone-chip">📞 07807673733</div>
+      <div class="phone-chip">📞 07721477751</div>
+    </div>
+  </header>
+
+  <div class="container" id="homePage">
+    <div class="card">
+      <div class="card-header">
+        <div class="ico">👥</div>
+        <h3>قائمة الزبائن</h3>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input type="text" id="searchInput" placeholder="ابحث بالاسم..." oninput="renderCustomers()">
+          <span class="ico">🔍</span>
+        </div>
+        <button class="btn btn-primary" onclick="openCustomerModal()">➕ إضافة زبون</button>
+        <button class="btn btn-ghost" onclick="loadCustomers()">🔄 تحديث</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:60px">#</th>
+              <th>الاسم</th>
+              <th>الهاتف</th>
+              <th>الموقع</th>
+              <th style="width:130px">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="customersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="customerPage" style="display:none">
+    <button class="btn btn-ghost" onclick="showHome()" style="margin-bottom:16px">⬅ رجوع للرئيسية</button>
+
+    <div class="customer-bar">
+      <div class="customer-info">
+        <h2><span class="ico">👤</span> <span id="cName"></span></h2>
+        <div class="meta">
+          <span>📞 <span id="cPhone">-</span></span>
+          <span>📍 <span id="cLocation">-</span></span>
+        </div>
+      </div>
+      <button class="btn btn-accent" onclick="printFullReceipt()">📄 طباعة كامل السجل</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="ico">💼</div>
+        <h3>الحركات المالية</h3>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input type="text" id="txSearchInput" placeholder="ابحث برقم القائمة أو الملاحظات..." oninput="renderTransactions()">
+          <span class="ico">🔍</span>
+        </div>
+        <div class="date-filter">
+          <input type="date" id="txDateFrom" onchange="renderTransactions()" title="من تاريخ">
+        </div>
+        <div class="date-filter">
+          <input type="date" id="txDateTo" onchange="renderTransactions()" title="إلى تاريخ">
+        </div>
+        <button class="btn btn-ghost" onclick="clearTxFilters()">✖ مسح الفلاتر</button>
+        <button class="btn btn-primary" onclick="openTransactionModal()">➕ إضافة حركة</button>
+        <button class="btn btn-ghost" onclick="loadTransactions()">🔄 تحديث</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>عدد الكمية</th>
+              <th>المبلغ الكلي</th>
+              <th>الواصل</th>
+              <th>الباقي</th>
+              <th>التاريخ</th>
+              <th>رقم القائمة</th>
+              <th>ملاحظات</th>
+              <th style="width:150px">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="transactionsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: زبون -->
+<div class="modal" id="customerModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="ico">✏️</div>
+      <h3 id="customerModalTitle">إضافة زبون</h3>
+    </div>
+    <input type="hidden" id="customerId">
+
+    <div class="form-group">
+      <label>الاسم *</label>
+      <input type="text" id="fName" placeholder="أدخل اسم الزبون">
+    </div>
+    <div class="form-group">
+      <label>الهاتف</label>
+      <input type="text" id="fPhone" placeholder="مثال: 07701234567">
+    </div>
+    <div class="form-group">
+      <label>الموقع</label>
+      <input type="text" id="fLocation" placeholder="مثال: صنعاء - شارع تعز">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveCustomer()">💾 حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('customerModal')">✖ إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: حركة -->
+<div class="modal" id="transactionModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="ico">✏️</div>
+      <h3 id="transactionModalTitle">إضافة حركة</h3>
+    </div>
+    <input type="hidden" id="transactionId">
+
+    <div class="form-group">
+      <label>عدد الكمية</label>
+      <input type="number" id="fQuantity" placeholder="0" step="any">
+    </div>
+    <div class="form-group">
+      <label>المبلغ الكلي</label>
+      <input type="number" id="fTotalAmount" placeholder="0" step="any">
+    </div>
+    <div class="form-group">
+      <label>الواصل</label>
+      <input type="number" id="fPaid" placeholder="0" step="any">
+    </div>
+    <div class="form-group">
+      <label>الباقي (تلقائي)</label>
+      <input type="text" id="fRemaining" placeholder="0" readonly style="background:#eef3f9;font-weight:800;color:#c0392b">
+    </div>
+    <div class="form-group">
+      <label>التاريخ</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="form-group">
+      <label>رقم القائمة (أحرف وأرقام)</label>
+      <input type="text" id="fListNo" placeholder="مثال: A1001">
+    </div>
+    <div class="form-group">
+      <label>ملاحظات</label>
+      <textarea id="fNotes" placeholder="ملاحظات إضافية..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveTransaction()">💾 حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('transactionModal')">✖ إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- الوصل -->
+<div class="receipt-wrap" id="receiptWrap">
+  <div class="receipt-toolbar">
+    <button class="btn btn-primary" onclick="window.print()">🖨 طباعة</button>
+    <button class="btn btn-accent" onclick="downloadReceipt()">📄 تنزيل PDF</button>
+    <button class="btn btn-danger" onclick="closeReceipt()">✖ إغلاق</button>
+  </div>
+  <div class="receipt" id="receiptContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ============================================================
+   الإعدادات
+   ============================================================ */
+var API_URL = "https://script.google.com/macros/s/AKfycbxwFT30hRe_rADCPMC5ClF8uZcMQlAiZh7F6_yudYy9gsHnRuUOUjSe1Nc7TY0XhHj3/exec";
+var ACCESS_CODE = "1234512345";
+var PHONE_1 = "07807673733";
+var PHONE_2 = "07721477751";
+var INSTAGRAM = "xbcb_68";
+var ADDRESS = "بابل طريق حلة كربلاء | عمود 81";
+var STORE_NAME = "نزار الحميري";
+
+/* ★★ مسارات الصور — ضع الملفات في نفس مجلد HTML ★★ */
+var LOGO_IMG   = "logo.png";      // الشعار
+var WATERMARK_IMG = "image1.png"; // الواتر مارك + صورة أعلى الوصل
+
+var customers = [];
+var currentCustomer = null;
+var transactions = [];
+
+/* ============================================================
+   أدوات
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, type){
+  type = type || 'success';
+  var icons = {success:'✓', error:'✕', warning:'⚠', info:'ℹ'};
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span class="ico">' + (icons[type] || 'ℹ') + '</span><span>' + msg + '</span>';
+  $('toastContainer').appendChild(el);
+  setTimeout(function(){
+    el.classList.add('hide');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 3000);
+}
+
+function fmt(n){
+  if(n === undefined || n === null || n === '') return '0';
+  var num = Number(n);
+  if(isNaN(num)) return '0';
+  return num.toLocaleString('en-US');
+}
+
+function escapeHtml(s){
+  if(s === undefined || s === null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function formatDateAr(s){
+  if(!s) return '-';
+  try{
+    var d = new Date(s);
+    if(isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('ar-EG', {year:'numeric', month:'long', day:'numeric'});
+  }catch(e){ return s; }
+}
+
+/* ============================================================
+   الدخول
+   ============================================================ */
+function checkLogin(){
+  var input = $('codeInput');
+  var val = (input.value || '').trim();
+
+  if(val === ACCESS_CODE){
+    sessionStorage.setItem('nizar_auth', '1');
+    $('loginScreen').style.display = 'none';
+    $('app').style.display = 'block';
+    $('debugBox').style.display = 'none';
+    loadCustomers();
+  } else {
+    $('loginError').innerHTML = '✕ الرمز غير صحيح';
+    $('loginBox').classList.add('shake');
+    setTimeout(function(){ $('loginBox').classList.remove('shake'); }, 500);
+    $('debugBox').innerHTML = '<b>الطول المُدخل:</b> ' + val.length + '<br><b>الطول المتوقع:</b> ' + ACCESS_CODE.length;
+    $('debugBox').style.display = 'block';
+    input.value = '';
+    input.focus();
+  }
+}
+
+/* ============================================================
+   API
+   ============================================================ */
+function apiGet(action, params){
+  params = params || {};
+  var q = new URLSearchParams();
+  q.append('action', action);
+  for(var k in params){ if(params.hasOwnProperty(k)) q.append(k, params[k]); }
+  return fetch(API_URL + '?' + q.toString(), {method:'GET'}).then(function(r){ return r.json(); });
+}
+function apiPost(action, data){
+  data = data || {};
+  var payload = {action: action};
+  for(var k in data){ if(data.hasOwnProperty(k)) payload[k] = data[k]; }
+  return fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: {'Content-Type': 'text/plain;charset=utf-8'}
+  }).then(function(r){ return r.json(); });
+}
+
+/* ============================================================
+   الزبائن
+   ============================================================ */
+function loadCustomers(){
+  return apiGet('getCustomers').then(function(data){
+    customers = Array.isArray(data) ? data : [];
+    renderCustomers();
+  }).catch(function(e){ toast('خطأ: ' + e.message, 'error'); });
+}
+
+function renderCustomers(){
+  var q = ($('searchInput').value || '').trim().toLowerCase();
+  var body = $('customersBody');
+  body.innerHTML = '';
+
+  var filtered = customers.filter(function(c){ return !q || String(c.name).toLowerCase().indexOf(q) !== -1; });
+
+  if(filtered.length === 0){
+    body.innerHTML = '<tr><td colspan="5" class="empty-row">' + (q ? 'لا توجد نتائج' : 'لا يوجد زبائن بعد') + '</td></tr>';
+    return;
+  }
+
+  filtered.forEach(function(c, i){
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><span class="badge badge-neutral">' + (i+1) + '</span></td>' +
+      '<td><span class="name-link" onclick="openCustomer(\'' + c.id + '\')">👤 ' + escapeHtml(c.name) + '</span></td>' +
+      '<td>' + (c.phone ? '📞 ' + escapeHtml(c.phone) : '-') + '</td>' +
+      '<td>' + (c.location ? '📍 ' + escapeHtml(c.location) : '-') + '</td>' +
+      '<td><div class="actions-cell">' +
+        '<button class="btn btn-sm btn-primary btn-icon" onclick="editCustomer(\'' + c.id + '\');event.stopPropagation()">✏</button>' +
+        '<button class="btn btn-sm btn-danger btn-icon" onclick="deleteCustomer(\'' + c.id + '\');event.stopPropagation()">🗑</button>' +
+      '</div></td>';
+    body.appendChild(tr);
+  });
+}
+
+function openCustomerModal(c){
+  c = c || null;
+  $('customerModalTitle').textContent = c ? 'تعديل بيانات الزبون' : 'إضافة زبون جديد';
+  $('customerId').value = c ? c.id : '';
+  $('fName').value = c ? c.name : '';
+  $('fPhone').value = c ? (c.phone || '') : '';
+  $('fLocation').value = c ? (c.location || '') : '';
+  $('customerModal').classList.add('active');
+  setTimeout(function(){ $('fName').focus(); }, 100);
+}
+
+function editCustomer(id){
+  var c = customers.find(function(x){ return String(x.id) === String(id); });
+  if(c) openCustomerModal(c);
+}
+
+function saveCustomer(){
+  var id = $('customerId').value;
+  var name = $('fName').value.trim();
+  var phone = $('fPhone').value.trim();
+  var location = $('fLocation').value.trim();
+
+  if(!name){ toast('الاسم مطلوب', 'warning'); return; }
+  closeModal('customerModal');
+
+  var promise;
+  if(id){
+    promise = apiPost('updateCustomer', {id:id, name:name, phone:phone, location:location})
+      .then(function(){ toast('تم التحديث', 'success'); });
+  } else {
+    promise = apiPost('addCustomer', {name:name, phone:phone, location:location})
+      .then(function(r){
+        if(r.error === 'duplicate'){ toast('الاسم موجود مسبقاً', 'error'); return Promise.reject(new Error('dup')); }
+        toast('تمت الإضافة', 'success');
+      });
+  }
+
+  promise.then(function(){ return loadCustomers(); })
+    .catch(function(e){ if(e.message !== 'dup') toast('خطأ: ' + e.message, 'error'); });
+}
+
+function deleteCustomer(id){
+  var c = customers.find(function(x){ return String(x.id) === String(id); });
+  if(!c) return;
+  if(!confirm('حذف "' + c.name + '" وجميع حركاته؟')) return;
+
+  apiPost('deleteCustomer', {id:id})
+    .then(function(){ toast('تم الحذف', 'success'); return loadCustomers(); })
+    .catch(function(e){ toast('خطأ: ' + e.message, 'error'); });
+}
+
+/* ============================================================
+   صفحة الزبون
+   ============================================================ */
+function openCustomer(id){
+  currentCustomer = customers.find(function(c){ return String(c.id) === String(id); });
+  if(!currentCustomer){ toast('غير موجود', 'error'); return; }
+
+  $('homePage').style.display = 'none';
+  $('customerPage').style.display = 'block';
+  $('cName').textContent = currentCustomer.name;
+  $('cPhone').textContent = currentCustomer.phone || '-';
+  $('cLocation').textContent = currentCustomer.location || '-';
+  window.scrollTo({top:0, behavior:'smooth'});
+  loadTransactions();
+}
+
+function showHome(){
+  $('customerPage').style.display = 'none';
+  $('homePage').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+  loadCustomers();
+}
+
+function loadTransactions(){
+  if(!currentCustomer) return;
+  return apiGet('getTransactions', {customerId: currentCustomer.id})
+    .then(function(data){ transactions = Array.isArray(data) ? data : []; renderTransactions(); })
+    .catch(function(e){ toast('خطأ: ' + e.message, 'error'); });
+}
+
+function clearTxFilters(){
+  $('txSearchInput').value = '';
+  $('txDateFrom').value = '';
+  $('txDateTo').value = '';
+  renderTransactions();
+}
+
+function getFilteredTransactions(){
+  var q = ($('txSearchInput').value || '').trim().toLowerCase();
+  var df = $('txDateFrom').value;
+  var dt = $('txDateTo').value;
+
+  return transactions.filter(function(t){
+    if(q){
+      var hay = (String(t.listNo||'') + ' ' + String(t.notes||'')).toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
+    }
+    var ymd = t.date || '';
+    if(df && ymd < df) return false;
+    if(dt && ymd > dt) return false;
+    return true;
+  });
+}
+
+function renderTransactions(){
+  var body = $('transactionsBody');
+  body.innerHTML = '';
+
+  var filtered = getFilteredTransactions();
+
+  if(filtered.length === 0){
+    body.innerHTML = '<tr><td colspan="8" class="empty-row">لا توجد حركات — أضف حركة</td></tr>';
+    return;
+  }
+
+  filtered.forEach(function(t){
+    var totalAmount = Number(t.totalAmount) || 0;
+    var paid = Number(t.paid) || 0;
+    var remaining = Number(t.remaining);
+    if(isNaN(remaining)) remaining = totalAmount - paid;
+
+    var cls = remaining > 0 ? 'badge-danger' : (remaining < 0 ? 'badge-success' : 'badge-neutral');
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openReceipt(t); };
+    tr.innerHTML =
+      '<td><b>' + (escapeHtml(t.quantity) || '0') + '</b></td>' +
+      '<td>' + fmt(totalAmount) + '</td>' +
+      '<td>' + fmt(paid) + '</td>' +
+      '<td><span class="badge ' + cls + '">' + fmt(remaining) + '</span></td>' +
+      '<td style="font-size:12.5px;color:var(--muted)">' + formatDateAr(t.date) + '</td>' +
+      '<td>' + (escapeHtml(t.listNo) || '-') + '</td>' +
+      '<td style="max-width:180px;font-size:12.5px;color:var(--text-2)">' + (escapeHtml(t.notes) || '-') + '</td>' +
+      '<td><div class="actions-cell">' +
+        '<button class="btn btn-sm btn-primary btn-icon" onclick="editTransaction(\'' + t.id + '\');event.stopPropagation()">✏</button>' +
+        '<button class="btn btn-sm btn-danger btn-icon" onclick="deleteTransaction(\'' + t.id + '\');event.stopPropagation()">🗑</button>' +
+        '<button class="btn btn-sm btn-accent btn-icon" onclick="openReceiptById(\'' + t.id + '\');event.stopPropagation()">📄</button>' +
+      '</div></td>';
+    body.appendChild(tr);
+  });
+}
+
+function openReceiptById(id){
+  var t = transactions.find(function(x){ return String(x.id) === String(id); });
+  if(t) openReceipt(t);
+}
+
+function openTransactionModal(t){
+  t = t || null;
+  $('transactionModalTitle').textContent = t ? 'تعديل الحركة' : 'إضافة حركة جديدة';
+  $('transactionId').value = t ? t.id : '';
+  $('fQuantity').value = t ? (t.quantity || '') : '';
+  $('fTotalAmount').value = t ? (t.totalAmount || '') : '';
+  $('fPaid').value = t ? (t.paid || '') : '';
+  $('fRemaining').value = t ? fmt(t.remaining || 0) : '0';
+  $('fDate').value = t ? t.date : todayStr();
+  $('fListNo').value = t ? (t.listNo || '') : '';
+  $('fNotes').value = t ? (t.notes || '') : '';
+  $('transactionModal').classList.add('active');
+  setTimeout(function(){ $('fQuantity').focus(); }, 100);
+  recalcRemaining();
+}
+
+function recalcRemaining(){
+  var total = Number($('fTotalAmount').value) || 0;
+  var paid = Number($('fPaid').value) || 0;
+  var remaining = total - paid;
+  var el = $('fRemaining');
+  el.value = fmt(remaining);
+  el.style.color = remaining > 0 ? '#c0392b' : (remaining < 0 ? '#16a085' : '#16222e');
+}
+
+function editTransaction(id){
+  var t = transactions.find(function(x){ return String(x.id) === String(id); });
+  if(t) openTransactionModal(t);
+}
+
+function saveTransaction(){
+  var id = $('transactionId').value;
+  var totalAmount = Number($('fTotalAmount').value) || 0;
+  var paid = Number($('fPaid').value) || 0;
+  var data = {
+    quantity: $('fQuantity').value,
+    totalAmount: totalAmount,
+    paid: paid,
+    remaining: totalAmount - paid,
+    listNo: $('fListNo').value,
+    notes: $('fNotes').value,
+    date: $('fDate').value || todayStr()
+  };
+  closeModal('transactionModal');
+
+  var promise;
+  if(id){
+    data.id = id;
+    promise = apiPost('updateTransaction', data).then(function(){ toast('تم التحديث', 'success'); });
+  } else {
+    data.customerId = currentCustomer.id;
+    promise = apiPost('addTransaction', data).then(function(){ toast('تمت الإضافة', 'success'); });
+  }
+
+  promise.then(function(){ return loadTransactions(); })
+    .catch(function(e){ toast('خطأ: ' + e.message, 'error'); });
+}
+
+function deleteTransaction(id){
+  if(!confirm('حذف هذه الحركة؟')) return;
+  apiPost('deleteTransaction', {id:id})
+    .then(function(){ toast('تم الحذف', 'success'); return loadTransactions(); })
+    .catch(function(e){ toast('خطأ: ' + e.message, 'error'); });
+}
+
+function closeModal(id){ $(id).classList.remove('active'); }
+
+/* ============================================================
+   الوصل
+   ============================================================ */
+var __currentReceiptData = null;
+
+function openReceipt(t){
+  if(!currentCustomer) return;
+  var rows = [t];
+  __currentReceiptData = {rows: rows, isFull: false};
+  $('receiptContent').innerHTML = buildReceiptHTML(rows, false);
+  $('receiptWrap').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function printFullReceipt(){
+  var filtered = getFilteredTransactions();
+  if(!filtered.length){ toast('لا توجد حركات', 'warning'); return; }
+  __currentReceiptData = {rows: filtered, isFull: true};
+  $('receiptContent').innerHTML = buildReceiptHTML(filtered, true);
+  $('receiptWrap').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+/* ★★ ترتيب العمليات حسب التاريخ ★★ */
+function sortByDateAsc(rows){
+  return rows.slice().sort(function(a, b){
+    var da = a.date || '';
+    var db = b.date || '';
+    if(da < db) return -1;
+    if(da > db) return 1;
+    return 0;
+  });
+}
+
+function buildReceiptHTML(rowsInput, isFull){
+  var c = currentCustomer;
+  var today = new Date().toLocaleDateString('ar-EG', {year:'numeric', month:'long', day:'numeric'});
+
+  // ★ نرتب حسب التاريخ تصاعدياً لحساب "الباقي لآخر تاريخ" بشكل صحيح
+  var rows = sortByDateAsc(rowsInput);
+
+  var totalTotal = 0, totalPaid = 0, totalQty = 0, totalRemaining = 0;
+  var lastDate = '-';
+  var lastRemaining = 0;   // ★ الباقي لآخر عملية شراء (حسب التاريخ)
+  var tableRows = '';
+
+  rows.forEach(function(t, i){
+    var totalAmount = Number(t.totalAmount) || 0;
+    var paid = Number(t.paid) || 0;
+    var remaining = Number(t.remaining);
+    if(isNaN(remaining)) remaining = totalAmount - paid;
+
+    totalTotal     += totalAmount;
+    totalPaid      += paid;
+    totalQty       += Number(t.quantity) || 0;
+    totalRemaining += remaining;
+
+    // آخر تاريخ وآخر باقي
+    if(t.date){
+      lastDate = t.date;
+      lastRemaining = remaining;
+    }
+
+    tableRows += '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + (escapeHtml(t.quantity) || '0') + '</td>' +
+      '<td>' + fmt(totalAmount) + '</td>' +
+      '<td>' + fmt(paid) + '</td>' +
+      '<td>' + fmt(remaining) + '</td>' +
+      '<td>' + (escapeHtml(t.date) || '-') + '</td>' +
+      '<td>' + (escapeHtml(t.listNo) || '-') + '</td>' +
+      '<td>' + (escapeHtml(t.notes) || '-') + '</td>' +
+    '</tr>';
+  });
+
+  // ★ "الباقي إلى آخر تاريخ" = مجموع الباقي لآخر عملية فقط (حسب التاريخ)
+  // لكن المطلوب: الباقي المتبقي لكامل العمليات حتى آخر تاريخ = totalRemaining
+  // لكن لو أردت الباقي للعملية الأخيرة فقط نعرضها بجانبها
+  // نعرض الاثنين:
+
+  var sizeClass = '';
+  if(rows.length > 40) sizeClass = 'font-xs';
+  else if(rows.length > 20) sizeClass = 'font-sm';
+
+  var receipt = document.getElementById('receiptContent');
+  receipt.className = 'receipt ' + sizeClass;
+
+  // ====== صندوق الملخص ======
+  var summaryHTML = '';
+  if(isFull){
+    summaryHTML =
+      '<div class="receipt-summary">' +
+        '<div class="item"><span>إجمالي الكمية:</span><b>' + fmt(totalQty) + '</b></div>' +
+        '<div class="item"><span>عدد الحركات:</span><b>' + rows.length + '</b></div>' +
+        '<div class="item"><span>إجمالي المبلغ الكلي:</span><b>' + fmt(totalTotal) + '</b></div>' +
+        '<div class="item"><span>إجمالي الواصل:</span><b>' + fmt(totalPaid) + '</b></div>' +
+
+        // ★ الباقي الكلي
+        '<div class="item grand ' + (totalRemaining <= 0 ? 'positive' : '') + '">' +
+          '<span>💰 الباقي الكلي:</span>' +
+          '<b>' + fmt(totalRemaining) + '</b>' +
+        '</div>' +
+
+        // ★ الباقي إلى آخر تاريخ
+        '<div class="item last ' + (lastRemaining <= 0 ? 'positive' : '') + '">' +
+          '<span>📅 الباقي إلى آخر تاريخ (' + formatDateAr(lastDate) + '):</span>' +
+          '<b>' + fmt(lastRemaining) + '</b>' +
+        '</div>' +
+      '</div>';
+  } else {
+    summaryHTML =
+      '<div class="receipt-summary">' +
+        '<div class="item"><span>الكمية:</span><b>' + fmt(totalQty) + '</b></div>' +
+        '<div class="item"><span>المبلغ الكلي:</span><b>' + fmt(totalTotal) + '</b></div>' +
+        '<div class="item"><span>الواصل:</span><b>' + fmt(totalPaid) + '</b></div>' +
+        '<div class="item grand ' + (totalRemaining <= 0 ? 'positive' : '') + '">' +
+          '<span>💰 الباقي الى اخر عملية شراء :</span>' +
+          '<b>' + fmt(totalRemaining) + '</b>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // ★★ HTML الوصل — مع طبقة Watermark كعنصر HTML منفصل ★★
+  return '' +
+    // طبقة الواتر مارك
+    '<div class="receipt-watermark"></div>' +
+
+    // الصورة في أعلى وسط الوصل
+    '<div class="receipt-top-logo">' +
+      '<img src="' + WATERMARK_IMG + '" alt="" onerror="this.style.display=\'none\'">' +
+    '</div>' +
+
+    '<div class="receipt-header">' +
+      '<div class="logo-box"><img src="' + LOGO_IMG + '" alt="" onerror="this.style.display=\'none\'"></div>' +
+      '<div class="title">' +
+        '<h1>' + STORE_NAME + '</h1>' +
+        '<p>وكالـــــــــة XOVO</p>' +
+      '</div>' +
+      '<div class="phones">' +
+        '<strong>📞 ' + PHONE_1 + '</strong>' +
+        '<strong>📞 ' + PHONE_2 + '</strong>' +
+        '<div class="date-line">التاريخ: ' + today + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="receipt-info">' +
+      '<div><b>الزبون:</b> ' + escapeHtml(c.name) + '</div>' +
+      '<div><b>الهاتف:</b> ' + (escapeHtml(c.phone) || '-') + '</div>' +
+      '<div><b>الموقع:</b> ' + (escapeHtml(c.location) || '-') + '</div>' +
+      '<div><b>نوع الوثيقة:</b> ' + (isFull ? 'كشف حساب كامل' : 'فاتورة') + '</div>' +
+    '</div>' +
+
+    '<table class="receipt-table">' +
+      '<thead><tr>' +
+        '<th style="width:5%">#</th>' +
+        '<th>عدد الكمية</th>' +
+        '<th>المبلغ الكلي</th>' +
+        '<th>الواصل</th>' +
+        '<th>الباقي</th>' +
+        '<th>التاريخ</th>' +
+        '<th>رقم القائمة</th>' +
+        '<th>ملاحظات</th>' +
+      '</tr></thead>' +
+      '<tbody>' + tableRows +
+        '<tr class="total-row">' +
+          '<td colspan="2">الإجمالي</td>' +
+          '<td>' + fmt(totalTotal) + '</td>' +
+          '<td>' + fmt(totalPaid) + '</td>' +
+          '<td>' + fmt(totalRemaining) + '</td>' +
+          '<td colspan="3">—</td>' +
+        '</tr>' +
+      '</tbody>' +
+    '</table>' +
+
+    summaryHTML +
+
+    '<div class="receipt-footer">' +
+      '<div class="contact-line">' +
+        '<span>📱 واتساب: ' + PHONE_1 + '</span>' +
+        '<span>📱 واتساب: ' + PHONE_2 + '</span>' +
+        '<span>📷 إنستغرام: @' + INSTAGRAM + '</span>' +
+      '</div>' +
+      '<div class="address-line">📍 ' + ADDRESS + '</div>' +
+      '<div class="thanks">شكراً لتعاملكم معنا 🌟</div>' +
+    '</div>';
+}
+
+function closeReceipt(){
+  $('receiptWrap').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+/* ============================================================
+   ★★ تحميل الصور كـ Base64 لتضمينها في PDF ★★
+   ============================================================ */
+function urlToBase64(url){
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = function(){
+      try{
+        var canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      }catch(e){
+        console.warn('urlToBase64 failed:', url, e);
+        resolve(null);
+      }
+    };
+    img.onerror = function(){
+      console.warn('Image load failed:', url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+/* ============================================================
+   تنزيل PDF
+   ============================================================ */
+function downloadReceipt(){
+  if(!currentCustomer) return;
+
+  var source = $('receiptContent');
+  if(!source || !source.innerHTML.trim()){
+    toast('الوصل فارغ', 'error');
+    return;
+  }
+
+  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+    toast('المكتبات لم تُحمَّل — تحقق من الإنترنت', 'error');
+    return;
+  }
+
+  var customerName = (currentCustomer.name || 'زبون').replace(/[\\/:*?"<>|]/g, '-');
+  var fileName = 'وصل-' + customerName + '-' + todayStr() + '.pdf';
+
+  toast('جارٍ التجهيز...', 'warning');
+
+  // ★★ ننتظر تحميل جميع الصور ثم نلتقط ★★
+  var allImgs = source.querySelectorAll('img');
+  var promises = [];
+  allImgs.forEach(function(img){
+    promises.push(new Promise(function(res){
+      if(img.complete && img.naturalWidth > 0) return res();
+      img.addEventListener('load', function(){ res(); });
+      img.addEventListener('error', function(){ res(); });
+    }));
+  });
+
+  Promise.all(promises).then(function(){
+    // انتظر إضافي بسيط لضمان رسم الصور
+    setTimeout(function(){
+      doCapture(source, fileName);
+    }, 300);
+  });
+}
+
+function doCapture(source, fileName){
+  var clone = source.cloneNode(true);
+
+  // ★ نضمن أن الواتر مارك موجودة كعنصر HTML
+  if(!clone.querySelector('.receipt-watermark')){
+    var wm = document.createElement('div');
+    wm.className = 'receipt-watermark';
+    clone.insertBefore(wm, clone.firstChild);
+  }
+
+  clone.style.position = 'fixed';
+  clone.style.top = '0';
+  clone.style.left = '0';
+  clone.style.zIndex = '-9999';
+  clone.style.width = '210mm';
+  clone.style.padding = '12mm';
+  clone.style.background = '#ffffff';
+  clone.style.boxShadow = 'none';
+  clone.style.borderRadius = '0';
+  clone.style.minHeight = 'auto';
+  clone.style.opacity = '1';
+  clone.style.display = 'block';
+
+  document.body.appendChild(clone);
+
+  // ★ نعطي المتصفح فرصة لرسم الصور داخل clone
+  setTimeout(function(){
+    html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      imageTimeout: 20000,
+      scrollX: 0,
+      scrollY: 0,
+      onclone: function(clonedDoc){
+        // ★ نضمن أن الواتر مارك مرئية في النسخة المنسوخة
+        var wms = clonedDoc.querySelectorAll('.receipt-watermark');
+        wms.forEach(function(w){
+          w.style.opacity = '0.08';
+          w.style.visibility = 'visible';
+          w.style.display = 'block';
+        });
+      }
+    }).then(function(canvas){
+      if(clone.parentNode) clone.parentNode.removeChild(clone);
+
+      if(!canvas || canvas.width < 10 || canvas.height < 10){
+        toast('فشل الالتقاط', 'error');
+        return;
+      }
+
+      var imgData;
+      try{
+        imgData = canvas.toDataURL('image/jpeg', 0.92);
+      }catch(err){
+        console.error('toDataURL failed:', err);
+        toast('خطأ في الصورة — حاول بعد ثوان', 'error');
+        return;
+      }
+
+      savePDF(imgData, fileName);
+    }).catch(function(err){
+      if(clone.parentNode) clone.parentNode.removeChild(clone);
+      console.error(err);
+      toast('خطأ: ' + err.message, 'error');
+    });
+  }, 500);
+}
+
+function savePDF(imgData, fileName){
+  var jsPDF = window.jspdf.jsPDF;
+  var pdf = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
+
+  var pdfW = pdf.internal.pageSize.getWidth();
+  var pdfH = pdf.internal.pageSize.getHeight();
+
+  var image = new Image();
+  image.onload = function(){
+    var imgW = pdfW;
+    var imgH = (image.height * imgW) / image.width;
+
+    if(imgH <= pdfH){
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+    } else {
+      var pageCount = Math.ceil(imgH / pdfH);
+      var position = 0;
+      for(var p = 0; p < pageCount; p++){
+        if(p > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, -position, imgW, imgH);
+        position += pdfH;
+      }
+    }
+
+    pdf.save(fileName);
+    toast('تم تنزيل PDF بنجاح', 'success');
+  };
+  image.src = imgData;
+}
+
+/* ============================================================
+   التهيئة
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function(){
+
+  var toggleBtn = $('togglePassword');
+  var codeInput = $('codeInput');
+
+  if(toggleBtn && codeInput){
+    toggleBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      var isPwd = codeInput.type === 'password';
+      codeInput.type = isPwd ? 'text' : 'password';
+      toggleBtn.textContent = isPwd ? '🙈' : '👁';
+      toggleBtn.classList.toggle('active', isPwd);
+      codeInput.focus();
+    });
+  }
+
+  $('loginBtn').addEventListener('click', checkLogin);
+  codeInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); checkLogin(); }
+  });
+
+  document.querySelectorAll('.modal').forEach(function(m){
+    m.addEventListener('click', function(e){
+      if(e.target === m) m.classList.remove('active');
+    });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      document.querySelectorAll('.modal.active').forEach(function(m){ m.classList.remove('active'); });
+      var rw = $('receiptWrap');
+      if(rw && rw.classList.contains('active')) closeReceipt();
+    }
+  });
+
+  var rw = $('receiptWrap');
+  if(rw){
+    rw.addEventListener('click', function(e){
+      if(e.target === rw) closeReceipt();
+    });
+  }
+
+  var fTotal = $('fTotalAmount');
+  var fPaid = $('fPaid');
+  if(fTotal) fTotal.addEventListener('input', recalcRemaining);
+  if(fPaid) fPaid.addEventListener('input', recalcRemaining);
+
+  if(sessionStorage.getItem('nizar_auth') === '1'){
+    $('loginScreen').style.display = 'none';
+    $('app').style.display = 'block';
+    loadCustomers();
+  }
+});
+</script>
+</body>
+</html>
